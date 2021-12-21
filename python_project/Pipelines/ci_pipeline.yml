@@ -1,0 +1,48 @@
+trigger:
+  branches:
+    include:
+    - '*'  # must quote since "*" is a YAML reserved character; we want a string
+  
+name: 'ci_pipeline'
+jobs:
+- job: 'ci_pipeline_job'
+  pool: Sikri-ML-Dev
+  steps:
+  - task: PipAuthenticate@1
+    displayName: 'Pip Authenticate'
+    inputs:
+      artifactFeeds: Projects/sikri_ml
+      onlyAddExtraIndex: true
+
+  - script: |
+      pip3 install --upgrade pip
+      pip3 install -r requirements.txt
+    displayName: 'Install project requirements'
+
+  - script: |
+      python3 -m flake8 .
+    displayName: 'Run flake8'
+
+  - script: |
+      python3 -m mypy Pipelines --exclude score
+    displayName: 'Run type checking of pipelines'
+
+  - script: |
+      python3 -m mypy Pipelines/source/score
+    displayName: 'Run type checking of score'
+
+  - script: |
+      python3 -m mypy Pipelines/source/train
+    displayName: 'Run type checking of train'
+
+  - script: |
+      python3 -m unittest discover -s tests -t Pipelines/source/ -v
+    displayName: 'Run main unit tests'
+
+  - script: |
+      python3 -m unittest discover -s tests -t Pipelines/source/score -v
+    displayName: 'Run score unit tests'
+
+  - script: |
+      python3 -m unittest discover -s tests -t Pipelines/source/train -v
+    displayName: 'Run train unit tests'
